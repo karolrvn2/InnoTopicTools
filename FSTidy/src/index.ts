@@ -17,6 +17,8 @@ const dbx = new Dropbox({ accessToken: DROPBOX_ACCESS_TOKEN });
 const isDryRun = process.argv.includes('--dry');
 console.log(chalk.cyan(`Starting, isDryRun: ${isDryRun}`));
 
+const startTime = Date.now(); // Record the start time
+
 async function listFiles(folder: string) {
     let files: any[] = [];
     let response = await dbx.filesListFolder({ path: folder });
@@ -86,5 +88,16 @@ async function processFiles() {
     }
 }
 
-processFiles().catch(error => console.error(chalk.red('Error during processing:'), error));
+processFiles()
+    .then(() => {
+        const endTime = Date.now(); // Record the end time
+        const elapsedTime = endTime - startTime;
+
+        const hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+        const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+
+        console.log(chalk.green(`Total running time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`));
+    })
+    .catch(error => console.error(chalk.red('Error during processing:'), error));
 
