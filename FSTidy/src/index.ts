@@ -54,8 +54,8 @@ async function extractExifDate(fileBuffer: Buffer): Promise<string | null> {
 }
 
 async function moveFile(filePath: string, destination: string) {
+    console.log(chalk.yellow(`move: ${filePath} -> ${destination}`));
     if (isDryRun) {
-        console.log(chalk.yellow(`[DRY RUN] Would move: ${filePath} -> ${destination}`));
     } else {
         await dbx.filesMoveV2({ from_path: filePath, to_path: destination });
         console.log(chalk.green(`Moved: ${filePath} -> ${destination}`));
