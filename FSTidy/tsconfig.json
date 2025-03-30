@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+      "target": "ESNext",            // Use a modern JavaScript target
+      "module": "commonjs",          // CommonJS for Node
+      "outDir": "./dist",            // Output directory for compiled JS
+      "rootDir": "./src",            // Source code directory
+      "strict": true,                // Enable all strict type-checking options
+      "esModuleInterop": true,       // Allows default importing syntax for CommonJS modules
+      "skipLibCheck": true           // Speeds up compilation by skipping type checks on libraries
+    },
+    "include": ["src/**/*.ts"],
+    "exclude": ["node_modules"]
+  }
+  
