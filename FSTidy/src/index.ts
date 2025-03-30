@@ -18,8 +18,19 @@ const isDryRun = process.argv.includes('--dry');
 console.log(chalk.cyan(`Starting, isDryRun: ${isDryRun}`));
 
 async function listFiles(folder: string) {
-    const response = await dbx.filesListFolder({ path: folder });
-    return response.result.entries;
+    let files: any[] = [];
+    let response = await dbx.filesListFolder({ path: folder });
+
+    files.push(...response.result.entries);
+
+    while (response.result.has_more) {
+        response = await dbx.filesListFolderContinue({
+            cursor: response.result.cursor,
+        });
+        files.push(...response.result.entries);
+    }
+
+    return files;
 }
 
 async function downloadFile(filePath: string) {
