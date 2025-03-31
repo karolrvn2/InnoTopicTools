@@ -106,11 +106,18 @@ function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function measureExecutionTime<T>(fn: () => Promise<T>, description: string): Promise<T> {
+async function measureExecutionTime<TResult>(fn: () => Promise<TResult>, description: string): Promise<TResult> {
     const startTime = Date.now();
     console.log(chalk.cyan(`Starting: ${description}`));
 
-    const result = await fn();
+    let error = undefined;
+    let result: TResult | undefined = undefined
+    try {
+        result = await fn();
+    } catch (err) {
+        console.error(chalk.red('Error during execution:'), error);
+        error = err;
+    }
 
     const endTime = Date.now();
     const elapsedTime = endTime - startTime;
@@ -120,7 +127,10 @@ async function measureExecutionTime<T>(fn: () => Promise<T>, description: string
     const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
 
     console.log(chalk.green(`Finished: ${description}. Total running time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`));
-    return result;
+    if ( error ) {
+        throw error
+    }
+    return result as TResult;
 }
 
 measureExecutionTime(processFiles, 'Processing Files').catch(error =>
