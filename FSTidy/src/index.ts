@@ -95,7 +95,7 @@ async function processFiles() {
         console.log(chalk.cyan(`Processing file ${fileIndex} of ${totalFiles}: ${file.name}`));
 
         const folder = await getDropboxFileDate(file); // Use Dropbox file date
-        const destinationFolder = folder || 'No Date';
+        const destinationFolder = folder;
 
         const destinationPath = `${TARGET_FOLDER}/${destinationFolder}/${file.name}`;
         await moveFile(file.path_lower!, destinationPath);
@@ -110,27 +110,24 @@ async function measureExecutionTime<TResult>(fn: () => Promise<TResult>, descrip
     const startTime = Date.now();
     console.log(chalk.cyan(`Starting: ${description}`));
 
-    let error = undefined;
-    let result: TResult | undefined = undefined
-    try {
-        result = await fn();
-    } catch (err) {
-        console.error(chalk.red('Error during execution:'), error);
-        error = err;
+    while (true) {
+        try {
+            const result = await fn();
+            const endTime = Date.now();
+            const elapsedTime = endTime - startTime;
+
+            const hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+            const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+
+            console.log(chalk.green(`Finished: ${description}. Total running time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`));
+            return result as TResult;
+        } catch (error) {
+            console.error(chalk.red('Error during execution:'), error);
+            console.log(chalk.yellow('Retrying in 2 seconds...'));
+            await delay(2000); // Wait for 2 seconds before retrying
+        }
     }
-
-    const endTime = Date.now();
-    const elapsedTime = endTime - startTime;
-
-    const hours = Math.floor(elapsedTime / (1000 * 60 * 60));
-    const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
-    const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
-
-    console.log(chalk.green(`Finished: ${description}. Total running time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`));
-    if ( error ) {
-        throw error
-    }
-    return result as TResult;
 }
 
 measureExecutionTime(processFiles, 'Processing Files').catch(error =>
