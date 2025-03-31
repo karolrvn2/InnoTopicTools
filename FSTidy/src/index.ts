@@ -64,7 +64,24 @@ async function moveFile(filePath: string, destination: string) {
     }
 }
 
+async function getDropboxFileDate(file: any): Promise<string> {
+    // try {   
+        const serverModified = new Date(file.server_modified);
+        const clientModified = new Date(file.client_modified);
+        const earlierDate = serverModified < clientModified ? serverModified : clientModified;
+
+        const year = earlierDate.getFullYear();
+        const month = String(earlierDate.getMonth() + 1).padStart(2, '0');
+        return `${year}/${year}-${month}`;
+    // } catch (error) {
+    //     console.error(chalk.red('Error determining file date:'), error);
+    //     return 'No Date';
+    // }
+}
+
 async function processFiles() {
+    // await delay(0);
+
     const files = await listFiles(SOURCE_FOLDER);
     console.log("files", files);
     const totalFiles = files.length;
@@ -77,27 +94,36 @@ async function processFiles() {
         fileIndex++;
         console.log(chalk.cyan(`Processing file ${fileIndex} of ${totalFiles}: ${file.name}`));
 
-        const fileData = await downloadFile(file.path_lower!);
-        const buffer = Buffer.from((fileData as any).fileBinary as ArrayBuffer);
-        
-        const folder = await extractExifDate(buffer);
-        if (!folder) continue;
+        const folder = await getDropboxFileDate(file); // Use Dropbox file date
+        const destinationFolder = folder || 'No Date';
 
-        const destinationPath = `${TARGET_FOLDER}/${folder}/${file.name}`;
+        const destinationPath = `${TARGET_FOLDER}/${destinationFolder}/${file.name}`;
         await moveFile(file.path_lower!, destinationPath);
     }
 }
 
-processFiles()
-    .then(() => {
-        const endTime = Date.now(); // Record the end time
-        const elapsedTime = endTime - startTime;
+function delay(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-        const hours = Math.floor(elapsedTime / (1000 * 60 * 60));
-        const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+async function measureExecutionTime<T>(fn: () => Promise<T>, description: string): Promise<T> {
+    const startTime = Date.now();
+    console.log(chalk.cyan(`Starting: ${description}`));
 
-        console.log(chalk.green(`Total running time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`));
-    })
-    .catch(error => console.error(chalk.red('Error during processing:'), error));
+    const result = await fn();
+
+    const endTime = Date.now();
+    const elapsedTime = endTime - startTime;
+
+    const hours = Math.floor(elapsedTime / (1000 * 60 * 60));
+    const minutes = Math.floor((elapsedTime % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((elapsedTime % (1000 * 60)) / 1000);
+
+    console.log(chalk.green(`Finished: ${description}. Total running time: ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`));
+    return result;
+}
+
+measureExecutionTime(processFiles, 'Processing Files').catch(error =>
+    console.error(chalk.red('Error during processing:'), error)
+);
 
